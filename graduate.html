@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>就业管理系统 - 毕业生</title>
+    <style>
+        /* ========== 全局重置 ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; background: #f0f2f5; }
+
+        /* ========== 顶部导航栏 ========== */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+        .header h2 { font-weight: 400; font-size: 22px; letter-spacing: 1px; }
+        .nav { display: flex; gap: 6px; flex-wrap: wrap; }
+        .nav a {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.25s;
+        }
+        .nav a:hover { background: rgba(255,255,255,0.2); color: #fff; }
+        .nav a.active { background: rgba(255,255,255,0.25); color: #fff; font-weight: 500; }
+
+        /* ========== 主容器 ========== */
+        .container { max-width: 1300px; margin: 28px auto; padding: 0 24px; }
+
+        /* ========== 卡片 ========== */
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            transition: box-shadow 0.2s;
+        }
+        .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+        .card h3 {
+            font-size: 20px;
+            font-weight: 500;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f2f5;
+        }
+
+        /* ========== 按钮 ========== */
+        .btn {
+            padding: 9px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .btn-danger { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+        .btn-outline { background: transparent; color: #667eea; border: 1.5px solid #667eea; }
+        .btn-outline:hover { background: #667eea; color: #fff; }
+
+        /* ========== 信息网格（14个字段） ========== */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px 30px;
+        }
+        .info-item {
+            padding: 10px 4px 10px 0;
+            border-bottom: 1px dashed #e8ecf1;
+        }
+        .info-item label {
+            display: block;
+            font-size: 12px;
+            color: #8c8f9e;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+        .info-item .value {
+            font-size: 16px;
+            color: #1a1a2e;
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        /* ========== 编辑表单 ========== */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px 30px;
+        }
+        .form-group { margin-bottom: 4px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #4a4a5a;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #dce0e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: #fafbfc;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+        }
+
+        /* ========== 招聘信息列表 ========== */
+        .job-item, .news-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 16px 18px;
+            border: 1px solid #e8ecf1;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            transition: background 0.15s;
+        }
+        .job-item:hover { background: #f8f9fc; }
+        .job-item h4 { font-size: 16px; color: #1a1a2e; margin-bottom: 4px; }
+        .job-item p { font-size: 14px; color: #5a5a6e; margin: 3px 0; }
+        .news-item { flex-direction: column; align-items: flex-start; }
+        .news-item .news-title { font-size: 17px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+        .news-item .news-meta { font-size: 13px; color: #8c8f9e; margin-bottom: 6px; }
+        .news-item .news-content { font-size: 14px; color: #4a4a5a; line-height: 1.7; }
+
+        /* ========== 状态标签 ========== */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .status-已投递 { background: #e3f2fd; color: #1565c0; }
+        .status-待查看 { background: #fff3e0; color: #e65100; }
+        .status-面试 { background: #e8f5e9; color: #2e7d32; }
+        .status-录用 { background: #c8e6c9; color: #1b5e20; }
+        .status-不合适 { background: #ffebee; color: #c62828; }
+
+        /* ========== 搜索栏 & 分页 ========== */
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 16px;
+            border: 1.5px solid #dce0e6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .search-bar input:focus { outline: none; border-color: #667eea; }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 22px;
+        }
+        .pagination button {
+            padding: 7px 16px;
+            border: 1px solid #dce0e6;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .pagination button:hover { background: #f0f2f5; }
+        .pagination button.active-page { background: #667eea; color: #fff; border-color: #667eea; }
+
+        /* ========== Toast 提示 ========== */
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 14px 28px;
+            border-radius: 10px;
+            color: #fff;
+            z-index: 9999;
+            display: none;
+            font-size: 15px;
+            font-weight: 500;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+            animation: slideIn 0.35s ease;
+        }
+        .toast.success { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .toast.error { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 768px) {
+            .header { padding: 14px 18px; }
+            .header h2 { font-size: 17px; }
+            .container { padding: 0 14px; }
+            .card { padding: 18px 16px; }
+            .form-row { grid-template-columns: 1fr; }
+            .info-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 480px) {
+            .info-grid { grid-template-columns: 1fr; }
+            .nav a { padding: 6px 12px; font-size: 13px; }
+        }
+
+        /* ========== 隐藏工具 ========== */
+        .hidden { display: none !important; }
+        .mt-12 { margin-top: 12px; }
+        .ml-10 { margin-left: 10px; }
+        .gap-10 { display: flex; gap: 10px; flex-wrap: wrap; }
+        .text-center { text-align: center; color: #8c8f9e; padding: 20px 0; }
+        .text-green { color: #2e7d32; }
+        .text-red { color: #c62828; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==================== 顶部导航 ==================== -->
+    <header class="header">
+        <h2>📋 就业管理系统 · 毕业生</h2>
+        <nav class="nav">
+            <a class="active" data-page="profile">👤 个人信息</a>
+            <a data-page="jobs">💼 招聘信息</a>
+            <a data-page="resume">📄 我的简历</a>
+            <a data-page="applications">📊 投递记录</a>
+            <a data-page="news">📰 就业资讯</a>
+            <a id="logoutBtn" style="background:rgba(255,255,255,0.12);">🚪 退出</a>
+        </nav>
+    </header>
+
+    <!-- ==================== 主容器 ==================== -->
+    <div class="container">
+
+        <!-- ============================================================ -->
+        <!-- 页面1：个人信息（完整14个字段） -->
+        <!-- ============================================================ -->
+        <div id="profilePage">
+            <div class="card">
+                <h3>👤 我的个人信息</h3>
+
+                <!-- ---- 查看模式 ---- -->
+                <div id="profileDisplay">
+                    <div class="info-grid" id="profileGrid">
+                        <!-- 14个字段由 JavaScript 动态渲染 -->
+                    </div>
+                    <button class="btn" onclick="showEditMode()" style="margin-top:18px;">✏️ 修改信息</button>
+                </div>
+
+                <!-- ---- 编辑模式 ---- -->
+                <div id="profileEdit" class="hidden">
+                    <div class="form-row" id="editFormContainer">
+                        <!-- 14个字段由 JavaScript 动态渲染 -->
+                    </div>
+                    <div class="gap-10 mt-12">
+                        <button class="btn btn-success" onclick="saveProfile()">💾 保存修改</button>
+                        <button class="btn btn-danger" onclick="hideEditMode()">取消</button>
+                    </div>
+                    <div id="editMsg" class="mt-12"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 页面2：招聘信息 -->
+        <!-- ============================================================ -->
+        <div id="jobsPage" class="hidden">
+            <div class="card">
+                <h3>💼 招聘信息</h3>
+                <div class="search-bar">
+                    <input type="text" id="searchKeyword" placeholder="🔍 搜索职位、专业、公司...">
+                    <button class="btn" id="searchBtn">搜索</button>
+                </div>
+                <div id="jobList"></div>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 页面3：我的简历 -->
+        <!-- ============================================================ -->
+        <div id="resumePage" class="hidden">
+            <div class="card">
+                <h3>📄 我的简历</h3>
+                <form id="resumeForm">
+                    <div class="form-row">
+                        <div class="form-group"><label>毕业时间</label><input type="date" id="graduation_time"></div>
+                        <div class="form-group"><label>求职意向</label><input type="text" id="job_intention" placeholder="如：Java开发工程师"></div>
+                        <div class="form-group"><label>外语语种</label><input type="text" id="foreign_lang" placeholder="如：英语"></div>
+                        <div class="form-group"><label>外语水平</label><input type="text" id="foreign_level" placeholder="如：CET-6"></div>
+                        <div class="form-group"><label>电脑水平</label><input type="text" id="computer_level" placeholder="如：熟悉 Java / Python"></div>
+                        <div class="form-group"><label>联系电话</label><input type="text" id="phone"></div>
+                        <div class="form-group"><label>邮箱</label><input type="email" id="email"></div>
+                        <div class="form-group"><label>联系地址</label><input type="text" id="address"></div>
+                    </div>
+                    <div class="form-group"><label>工作经历 / 社会实践</label><textarea id="work_experience" rows="4" style="width:100%;padding:10px;border:1.5px solid #dce0e6;border-radius:8px;font-size:14px;"></textarea></div>
+                    <div class="form-group"><label>自荐信</label><textarea id="cover_letter" rows="3" style="width:100%;padding:10px;border:1.5px solid #dce0e6;border-radius:8px;font-size:14px;"></textarea></div>
+                    <button type="submit" class="btn">💾 保存简历</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 页面4：投递记录 -->
+        <!-- ============================================================ -->
+        <div id="applicationsPage" class="hidden">
+            <div class="card">
+                <h3>📊 我的投递记录</h3>
+                <div id="applicationList"></div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 页面5：就业资讯 -->
+        <!-- ============================================================ -->
+        <div id="newsPage" class="hidden">
+            <div class="card">
+                <h3>📰 就业资讯</h3>
+                <div id="newsList"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ==================== JavaScript ==================== -->
+    <script>
+        // ================================================================
+        // 1. 配置：14个字段定义（与数据库完全一致）
+        // ================================================================
+        const FIELD_CONFIG = [
+            { key: 'stu_id',        label: '学号',         type: 'text',   editable: false },
+            { key: 'name',          label: '姓名',         type: 'text',   editable: true  },
+            { key: 'gender',        label: '性别',         type: 'select', editable: true, options: ['男', '女'] },
+            { key: 'age',           label: '年龄',         type: 'number', editable: true  },
+            { key: 'birth_date',    label: '出生日期',     type: 'date',   editable: true  },
+            { key: 'nation',        label: '民族',         type: 'text',   editable: true, placeholder: '如：汉族' },
+            { key: 'political_status', label: '政治面貌',  type: 'select', editable: true, options: ['中共党员', '中共预备党员', '共青团员', '群众'] },
+            { key: 'major',         label: '专业',         type: 'text',   editable: true  },
+            { key: 'college',       label: '院系名称',     type: 'text',   editable: true  },
+            { key: 'education',     label: '学历',         type: 'select', editable: true, options: ['本科', '硕士', '博士', '专科'] },
+            { key: 'edu_system',    label: '学制',         type: 'select', editable: true, options: ['2年', '3年', '4年'] },
+            { key: 'cultivate_type',label: '培养方式',     type: 'select', editable: true, options: ['非定向', '定向'] },
+            { key: 'hometown',      label: '生源地',       type: 'text',   editable: true, placeholder: '如：湖南长沙' },
+            { key: 'phone',         label: '联系电话',     type: 'text',   editable: true  }
+        ];
+
+        // ================================================================
+        // 2. 工具函数
+        // ================================================================
+        function showToast(msg, type = 'success') {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = 'toast ' + type;
+            el.style.display = 'block';
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        async function fetchAPI(url, options = {}) {
+            const res = await fetch(url, options);
+            return res.json();
+        }
+
+        function getVal(id) { return document.getElementById(id)?.value || ''; }
+        function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+
+        // ================================================================
+        // 3. 页面切换
+        // ================================================================
+        document.querySelectorAll('.nav a[data-page]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.dataset.page;
+                const map = {
+                    'profile': 'profilePage',
+                    'jobs': 'jobsPage',
+                    'resume': 'resumePage',
+                    'applications': 'applicationsPage',
+                    'news': 'newsPage'
+                };
+                document.querySelectorAll('.container > div').forEach(el => el.classList.add('hidden'));
+                const target = document.getElementById(map[page]);
+                if (target) target.classList.remove('hidden');
+                document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+                link.classList.add('active');
+                if (page === 'profile') loadProfile();
+                if (page === 'jobs') loadJobs();
+                if (page === 'resume') loadResume();
+                if (page === 'applications') loadApplications();
+                if (page === 'news') loadNews();
+            });
+        });
+
+        // ================================================================
+        // 4. 个人信息 - 渲染14个字段
+        // ================================================================
+        let profileData = {};
+
+        function renderProfileFields(data) {
+            // ---- 查看模式 ----
+            const grid = document.getElementById('profileGrid');
+            grid.innerHTML = FIELD_CONFIG.map(f => `
+                <div class="info-item">
+                    <label>${f.label}</label>
+                    <div class="value">${data[f.key] || '-'}</div>
+                </div>
+            `).join('');
+
+            // ---- 编辑模式 ----
+            const container = document.getElementById('editFormContainer');
+            container.innerHTML = FIELD_CONFIG.map(f => {
+                if (!f.editable) {
+                    return `<div class="form-group"><label>${f.label}</label><input type="text" value="${data[f.key] || ''}" disabled style="background:#f0f2f5;color:#666;"></div>`;
+                }
+                let inputHtml = '';
+                if (f.type === 'select') {
+                    const opts = (f.options || []).map(o =>
+                        `<option value="${o}" ${data[f.key] === o ? 'selected' : ''}>${o}</option>`
+                    ).join('');
+                    inputHtml = `<select id="e_${f.key}">${opts}</select>`;
+                } else {
+                    inputHtml = `<input type="${f.type}" id="e_${f.key}" placeholder="${f.placeholder || ''}" value="${data[f.key] || ''}">`;
+                }
+                return `<div class="form-group"><label>${f.label}</label>${inputHtml}</div>`;
+            }).join('');
+        }
+
+        async function loadProfile() {
+            const res = await fetchAPI('/api/graduate/info');
+            if (res.code === 200 && res.data) {
+                profileData = res.data;
+                renderProfileFields(profileData);
+            } else {
+                document.getElementById('profileGrid').innerHTML = '<div class="text-center">⚠️ 加载失败，请刷新重试</div>';
+            }
+        }
+
+        function showEditMode() {
+            document.getElementById('profileDisplay').classList.add('hidden');
+            document.getElementById('profileEdit').classList.remove('hidden');
+            document.getElementById('editMsg').textContent = '';
+        }
+
+        function hideEditMode() {
+            document.getElementById('profileDisplay').classList.remove('hidden');
+            document.getElementById('profileEdit').classList.add('hidden');
+            loadProfile();
+        }
+
+        async function saveProfile() {
+            const data = {};
+            FIELD_CONFIG.forEach(f => {
+                if (f.editable) {
+                    const el = document.getElementById(`e_${f.key}`);
+                    if (el) data[f.key] = el.value;
+                }
+            });
+            try {
+                const res = await fetchAPI('/api/graduate/info', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const msg = document.getElementById('editMsg');
+                if (res.code === 200) {
+                    msg.innerHTML = `<span class="text-green">✅ ${res.message}</span>`;
+                    showToast(res.message, 'success');
+                    setTimeout(hideEditMode, 1000);
+                } else {
+                    msg.innerHTML = `<span class="text-red">❌ ${res.message}</span>`;
+                    showToast(res.message, 'error');
+                }
+            } catch (e) {
+                document.getElementById('editMsg').innerHTML = `<span class="text-red">❌ 网络错误，请稍后重试</span>`;
+                showToast('网络错误', 'error');
+            }
+        }
+
+        // ================================================================
+        // 5. 招聘信息
+        // ================================================================
+        let currentPage = 1;
+
+        async function loadJobs() {
+            const keyword = document.getElementById('searchKeyword')?.value || '';
+            const res = await fetchAPI(`/api/jobs?page=${currentPage}&keyword=${encodeURIComponent(keyword)}`);
+            if (res.code === 200) {
+                const container = document.getElementById('jobList');
+                if (!res.data || res.data.length === 0) {
+                    container.innerHTML = '<div class="text-center">📭 暂无招聘信息</div>';
+                } else {
+                    container.innerHTML = res.data.map(job => `
+                        <div class="job-item">
+                            <div>
+                                <h4>${job.major_needed || '不限专业'}</h4>
+                                <p>🏢 ${job.employer_name} ｜ 学历：${job.edu_required || '不限'} ｜ 需求：${job.demand_num}人</p>
+                                <p style="color:#5a5a6e;">${job.job_description ? job.job_description.substring(0, 120) : ''}</p>
+                            </div>
+                            <button class="btn" onclick="applyJob(${job.rec_id})">📤 投递简历</button>
+                        </div>
+                    `).join('');
+                }
+                renderPagination(res.pagination);
+            }
+        }
+
+        async function applyJob(recId) {
+            const res = await fetchAPI('/api/apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rec_id: recId })
+            });
+            showToast(res.message, res.code === 200 ? 'success' : 'error');
+            if (res.code === 200) loadApplications();
+        }
+
+        document.getElementById('searchBtn')?.addEventListener('click', () => { currentPage = 1; loadJobs(); });
+
+        function renderPagination(pagination) {
+            const container = document.getElementById('pagination');
+            if (!pagination || pagination.pages <= 1) { container.innerHTML = ''; return; }
+            let html = '';
+            for (let i = 1; i <= pagination.pages; i++) {
+                html += `<button onclick="goToPage(${i})" class="${i === pagination.page ? 'active-page' : ''}">${i}</button>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadJobs();
+        }
+
+        // ================================================================
+        // 6. 简历管理
+        // ================================================================
+        async function loadResume() {
+            const res = await fetchAPI('/api/graduate/resume');
+            if (res.code === 200 && res.data) {
+                const d = res.data;
+                setVal('graduation_time', d.graduation_time);
+                setVal('job_intention', d.job_intention);
+                setVal('foreign_lang', d.foreign_lang);
+                setVal('foreign_level', d.foreign_level);
+                setVal('computer_level', d.computer_level);
+                setVal('phone', d.phone);
+                setVal('email', d.email);
+                setVal('address', d.address);
+                setVal('work_experience', d.work_experience);
+                setVal('cover_letter', d.cover_letter);
+            }
+        }
+
+        document.getElementById('resumeForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = {
+                graduation_time: getVal('graduation_time'),
+                job_intention: getVal('job_intention'),
+                foreign_lang: getVal('foreign_lang'),
+                foreign_level: getVal('foreign_level'),
+                computer_level: getVal('computer_level'),
+                phone: getVal('phone'),
+                email: getVal('email'),
+                address: getVal('address'),
+                work_experience: getVal('work_experience'),
+                cover_letter: getVal('cover_letter')
+            };
+            const res = await fetchAPI('/api/graduate/resume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            showToast(res.message, res.code === 200 ? 'success' : 'error');
+        };
+
+        // ================================================================
+        // 7. 投递记录
+        // ================================================================
+        async function loadApplications() {
+            const res = await fetchAPI('/api/graduate/applications');
+            if (res.code === 200 && res.data) {
+                const container = document.getElementById('applicationList');
+                if (res.data.length === 0) {
+                    container.innerHTML = '<div class="text-center">📭 暂无投递记录</div>';
+                } else {
+                    container.innerHTML = res.data.map(app => `
+                        <div class="job-item">
+                            <div>
+                                <h4>${app.major_needed}</h4>
+                                <p>🏢 ${app.employer_name} ｜ 投递时间：${app.apply_time}</p>
+                            </div>
+                            <span class="status-badge status-${app.status}">${app.status}</span>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        // ================================================================
+        // 8. 就业资讯
+        // ================================================================
+        async function loadNews() {
+            const res = await fetchAPI('/api/news');
+            if (res.code === 200 && res.data) {
+                const container = document.getElementById('newsList');
+                if (res.data.length === 0) {
+                    container.innerHTML = '<div class="text-center">📰 暂无就业资讯</div>';
+                } else {
+                    container.innerHTML = res.data.map(n => `
+                        <div class="news-item">
+                            <div class="news-title">${n.title}</div>
+                            <div class="news-meta">${n.category} ｜ ${n.publish_time} ｜ 发布人：${n.publisher || '就业办'}</div>
+                            <div class="news-content">${n.content}</div>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        // ================================================================
+        // 9. 退出登录
+        // ================================================================
+        document.getElementById('logoutBtn').onclick = async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/login.html';
+        };
+
+        // ================================================================
+        // 10. 初始化：验证登录 + 加载个人信息
+        // ================================================================
+        (async function init() {
+            try {
+                const res = await fetch('/api/current_user');
+                const data = await res.json();
+                if (data.code !== 200 || data.data?.role !== 'graduate') {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                // 显示用户名
+                document.querySelector('.header h2').textContent = `📋 就业管理系统 · ${data.data.name || '毕业生'}`;
+            } catch (e) {
+                window.location.href = '/login.html';
+            }
+            loadProfile();
+        })();
+    </script>
+</body>
+</html>
