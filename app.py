@@ -18,7 +18,7 @@ app.config['SESSION_COOKIE_SECURE'] = False  # 开发环境用False，生产环�
 # ==================== MySQL配置 ====================
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'woqu123456'  # ⚠️ 改成你的MySQL密码
+app.config['MYSQL_PASSWORD'] = ''  # ⚠️ 改成你的MySQL密码
 app.config['MYSQL_DB'] = 'employment_system'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
