@@ -89,7 +89,7 @@ def login():
         if not is_valid_stu_id(username):
             return jsonify({'code': 400, 'message': '学号格式不正确'})
         encrypted_pwd = hash_password(password)
-        cur.execute("SELECT stu_id, name FROM Graduate WHERE stu_id=%s AND password=%s", (username, encrypted_pwd))
+        cur.execute("SELECT stu_id, name FROM graduate WHERE stu_id=%s AND password=%s", (username, encrypted_pwd))
         user = cur.fetchone()
         if user:
             session['user_id'] = user['stu_id']
@@ -102,7 +102,7 @@ def login():
         if not is_valid_username(username):
             return jsonify({'code': 400, 'message': '用户名格式不正确'})
         encrypted_pwd = hash_password(password)
-        cur.execute("SELECT employer_id, name FROM Employer WHERE username=%s AND password=%s AND audit_status='通过'", (username, encrypted_pwd))
+        cur.execute("SELECT employer_id, name FROM employer WHERE username=%s AND password=%s AND audit_status='通过'", (username, encrypted_pwd))
         user = cur.fetchone()
         if user:
             session['user_id'] = user['employer_id']
@@ -147,7 +147,7 @@ def get_graduate_info():
     cur.execute("""
         SELECT stu_id, name, age, gender, birth_date, nation, political_status,
                major, college, education, edu_system, cultivate_type, hometown, phone
-        FROM Graduate WHERE stu_id=%s
+        FROM graduate WHERE stu_id=%s
     """, (stu_id,))
     info = cur.fetchone()
     cur.close()
@@ -178,7 +178,7 @@ def update_graduate_info():
 
     params.append(stu_id)
     # 使用参数化查询，字段名用白名单控制
-    sql = f"UPDATE Graduate SET {', '.join(fields)} WHERE stu_id = %s"
+    sql = f"UPDATE graduate SET {', '.join(fields)} WHERE stu_id = %s"
     cur = mysql.connection.cursor()
     cur.execute(sql, params)
     mysql.connection.commit()
@@ -196,7 +196,7 @@ def manage_resume():
     cur = mysql.connection.cursor()
 
     if request.method == 'GET':
-        cur.execute("SELECT * FROM Resume WHERE stu_id=%s", (stu_id,))
+        cur.execute("SELECT * FROM resume WHERE stu_id=%s", (stu_id,))
         resume = cur.fetchone()
         cur.close()
         return jsonify({'code': 200, 'data': resume})
@@ -204,7 +204,7 @@ def manage_resume():
     elif request.method == 'POST':
         data = request.json
         cur.execute("""
-            INSERT INTO Resume (stu_id, graduation_time, job_intention, foreign_lang, foreign_level,
+            INSERT INTO resume (stu_id, graduation_time, job_intention, foreign_lang, foreign_level,
             computer_level, phone, email, address, work_experience, cover_letter, is_published)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (stu_id, data.get('graduation_time'), data.get('job_intention'), data.get('foreign_lang'),
@@ -215,13 +215,13 @@ def manage_resume():
         return jsonify({'code': 200, 'message': '简历创建成功'})
 
     else:  # PUT - 先检查是否存在
-        cur.execute("SELECT resume_id FROM Resume WHERE stu_id=%s", (stu_id,))
+        cur.execute("SELECT resume_id FROM resume WHERE stu_id=%s", (stu_id,))
         if not cur.fetchone():
             cur.close()
             return jsonify({'code': 400, 'message': '请先创建简历'})
         data = request.json
         cur.execute("""
-            UPDATE Resume SET graduation_time=%s, job_intention=%s, foreign_lang=%s, foreign_level=%s,
+            UPDATE resume SET graduation_time=%s, job_intention=%s, foreign_lang=%s, foreign_level=%s,
             computer_level=%s, phone=%s, email=%s, address=%s, work_experience=%s, cover_letter=%s
             WHERE stu_id=%s
         """, (data.get('graduation_time'), data.get('job_intention'), data.get('foreign_lang'),
@@ -242,9 +242,9 @@ def get_my_applications():
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT a.app_id, e.name as employer_name, r.major_needed, a.apply_time, a.status
-        FROM Application a
-        JOIN Recruitment r ON a.rec_id = r.rec_id
-        JOIN Employer e ON r.employer_id = e.employer_id
+        FROM application a
+        JOIN recruitment r ON a.rec_id = r.rec_id
+        JOIN employer e ON r.employer_id = e.employer_id
         WHERE a.stu_id=%s
         ORDER BY a.apply_time DESC
     """, (stu_id,))
@@ -271,16 +271,16 @@ def get_jobs():
     cur.execute("""
         SELECT r.rec_id, e.name as employer_name, r.major_needed, r.edu_required,
                r.demand_num, r.recruit_method, r.job_description
-        FROM Recruitment r
-        JOIN Employer e ON r.employer_id = e.employer_id
+        FROM recruitment r
+        JOIN employer e ON r.employer_id = e.employer_id
         WHERE e.audit_status='通过' AND (r.major_needed LIKE %s OR r.job_description LIKE %s)
         LIMIT %s OFFSET %s
     """, (like, like, per_page, offset))
     jobs = cur.fetchall()
 
     cur.execute("""
-        SELECT COUNT(*) as total FROM Recruitment r
-        JOIN Employer e ON r.employer_id = e.employer_id
+        SELECT COUNT(*) as total FROM recruitment r
+        JOIN employer e ON r.employer_id = e.employer_id
         WHERE e.audit_status='通过' AND (r.major_needed LIKE %s OR r.job_description LIKE %s)
     """, (like, like))
     total = cur.fetchone()['total']
@@ -314,17 +314,17 @@ def apply_job():
     cur = mysql.connection.cursor()
 
     # 检查招聘信息是否存在且有效
-    cur.execute("SELECT rec_id FROM Recruitment WHERE rec_id=%s AND audit_status='已通过'", (rec_id,))
+    cur.execute("SELECT rec_id FROM recruitment WHERE rec_id=%s AND audit_status='已通过'", (rec_id,))
     if not cur.fetchone():
         cur.close()
         return jsonify({'code': 400, 'message': '招聘信息不存在或已下架'})
 
-    cur.execute("SELECT * FROM Application WHERE stu_id=%s AND rec_id=%s", (stu_id, rec_id))
+    cur.execute("SELECT * FROM application WHERE stu_id=%s AND rec_id=%s", (stu_id, rec_id))
     if cur.fetchone():
         cur.close()
         return jsonify({'code': 400, 'message': '您已投递过该职位'})
 
-    cur.execute("INSERT INTO Application (stu_id, rec_id) VALUES (%s, %s)", (stu_id, rec_id))
+    cur.execute("INSERT INTO application (stu_id, rec_id) VALUES (%s, %s)", (stu_id, rec_id))
     mysql.connection.commit()
     cur.close()
     return jsonify({'code': 200, 'message': '投递成功'})
@@ -340,7 +340,7 @@ def manage_recruitments():
     cur = mysql.connection.cursor()
 
     if request.method == 'GET':
-        cur.execute("SELECT rec_id, major_needed, edu_required, demand_num, recruit_method, publish_date, job_description FROM Recruitment WHERE employer_id=%s", (employer_id,))
+        cur.execute("SELECT rec_id, major_needed, edu_required, demand_num, recruit_method, publish_date, job_description FROM recruitment WHERE employer_id=%s", (employer_id,))
         recs = cur.fetchall()
         cur.close()
         return jsonify({'code': 200, 'data': recs})
@@ -348,7 +348,7 @@ def manage_recruitments():
     else:
         data = request.json
         cur.execute("""
-            INSERT INTO Recruitment (employer_id, major_needed, edu_required, demand_num, recruit_method, job_description)
+            INSERT INTO recruitment (employer_id, major_needed, edu_required, demand_num, recruit_method, job_description)
             VALUES (%s, %s, %s, %s, %s, %s)
         """, (employer_id, data.get('major_needed'), data.get('edu_required'),
               data.get('demand_num'), data.get('recruit_method'), data.get('job_description')))
@@ -366,11 +366,11 @@ def delete_recruitment(rec_id):
     employer_id = session['user_id']
     cur = mysql.connection.cursor()
     # 校验归属
-    cur.execute("SELECT rec_id FROM Recruitment WHERE rec_id=%s AND employer_id=%s", (rec_id, employer_id))
+    cur.execute("SELECT rec_id FROM recruitment WHERE rec_id=%s AND employer_id=%s", (rec_id, employer_id))
     if not cur.fetchone():
         cur.close()
         return jsonify({'code': 403, 'message': '无权删除该招聘信息'})
-    cur.execute("DELETE FROM Recruitment WHERE rec_id=%s AND employer_id=%s", (rec_id, employer_id))
+    cur.execute("DELETE FROM recruitment WHERE rec_id=%s AND employer_id=%s", (rec_id, employer_id))
     mysql.connection.commit()
     cur.close()
     return jsonify({'code': 200, 'message': '删除成功'})
@@ -386,9 +386,9 @@ def get_received_applications():
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT a.app_id, g.name, g.major, g.education, g.phone, a.apply_time, a.status, r.major_needed
-        FROM Application a
-        JOIN Graduate g ON a.stu_id = g.stu_id
-        JOIN Recruitment r ON a.rec_id = r.rec_id
+        FROM application a
+        JOIN graduate g ON a.stu_id = g.stu_id
+        JOIN recruitment r ON a.rec_id = r.rec_id
         WHERE r.employer_id=%s
         ORDER BY a.apply_time DESC
     """, (employer_id,))
@@ -410,15 +410,15 @@ def update_application_status(app_id):
     cur = mysql.connection.cursor()
     # 校验归属：该应聘记录是否属于当前单位的招聘
     cur.execute("""
-        SELECT a.app_id FROM Application a
-        JOIN Recruitment r ON a.rec_id = r.rec_id
+        SELECT a.app_id FROM application a
+        JOIN recruitment r ON a.rec_id = r.rec_id
         WHERE a.app_id=%s AND r.employer_id=%s
     """, (app_id, employer_id))
     if not cur.fetchone():
         cur.close()
         return jsonify({'code': 403, 'message': '无权修改该应聘状态'})
 
-    cur.execute("UPDATE Application SET status=%s WHERE app_id=%s", (status, app_id))
+    cur.execute("UPDATE application SET status=%s WHERE app_id=%s", (status, app_id))
     mysql.connection.commit()
     cur.close()
     return jsonify({'code': 200, 'message': '状态更新成功'})
@@ -430,7 +430,7 @@ def update_application_status(app_id):
 @safe_execute
 def get_news():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT news_id, title, category, publish_time, content FROM News ORDER BY publish_time DESC")
+    cur.execute("SELECT news_id, title, category, publish_time, content FROM news ORDER BY publish_time DESC")
     news = cur.fetchall()
     cur.close()
     return jsonify({'code': 200, 'data': news})
@@ -453,14 +453,14 @@ def admin_get_graduates():
     cur = mysql.connection.cursor()
     like = f'%{keyword}%'
     cur.execute("""
-        SELECT stu_id, name, gender, major, college, phone FROM Graduate
+        SELECT stu_id, name, gender, major, college, phone FROM graduate
         WHERE name LIKE %s OR stu_id LIKE %s OR major LIKE %s
         LIMIT %s OFFSET %s
     """, (like, like, like, per_page, offset))
     graduates = cur.fetchall()
 
     cur.execute("""
-        SELECT COUNT(*) as total FROM Graduate
+        SELECT COUNT(*) as total FROM graduate
         WHERE name LIKE %s OR stu_id LIKE %s OR major LIKE %s
     """, (like, like, like))
     total = cur.fetchone()['total']
@@ -478,7 +478,7 @@ def admin_get_graduates():
 @safe_execute
 def admin_get_employers():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT employer_id, username, name, location, nature, audit_status FROM Employer")
+    cur.execute("SELECT employer_id, username, name, location, nature, audit_status FROM employer")
     employers = cur.fetchall()
     cur.close()
     return jsonify({'code': 200, 'data': employers})
@@ -490,7 +490,7 @@ def audit_employer(employer_id):
     data = request.json
     status = data.get('status')
     cur = mysql.connection.cursor()
-    cur.execute("UPDATE Employer SET audit_status=%s WHERE employer_id=%s", (status, employer_id))
+    cur.execute("UPDATE employer SET audit_status=%s WHERE employer_id=%s", (status, employer_id))
     mysql.connection.commit()
     cur.close()
     return jsonify({'code': 200, 'message': f'已设置为{status}'})
@@ -507,8 +507,8 @@ def admin_get_recruitments():
         cur.execute("""
             SELECT r.rec_id, e.name as employer_name, r.major_needed, r.edu_required,
                    r.demand_num, r.recruit_method, r.job_description, r.publish_date, r.audit_status
-            FROM Recruitment r
-            JOIN Employer e ON r.employer_id = e.employer_id
+            FROM recruitment r
+            JOIN employer e ON r.employer_id = e.employer_id
             WHERE r.audit_status = %s
             ORDER BY r.publish_date DESC
         """, (status,))
@@ -516,8 +516,8 @@ def admin_get_recruitments():
         cur.execute("""
             SELECT r.rec_id, e.name as employer_name, r.major_needed, r.edu_required,
                    r.demand_num, r.recruit_method, r.job_description, r.publish_date, r.audit_status
-            FROM Recruitment r
-            JOIN Employer e ON r.employer_id = e.employer_id
+            FROM recruitment r
+            JOIN employer e ON r.employer_id = e.employer_id
             ORDER BY r.publish_date DESC
         """)
     recruitments = cur.fetchall()
@@ -531,7 +531,7 @@ def admin_audit_recruitment(rec_id):
     data = request.json
     status = data.get('status')
     cur = mysql.connection.cursor()
-    cur.execute("UPDATE Recruitment SET audit_status=%s WHERE rec_id=%s", (status, rec_id))
+    cur.execute("UPDATE recruitment SET audit_status=%s WHERE rec_id=%s", (status, rec_id))
     mysql.connection.commit()
     cur.close()
     return jsonify({'code': 200, 'message': f'已{status}'})
@@ -542,7 +542,7 @@ def admin_audit_recruitment(rec_id):
 @safe_execute
 def admin_get_jobfairs():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT fair_id, title, fair_time, location, content, total_booths, is_published FROM JobFair ORDER BY fair_time DESC")
+    cur.execute("SELECT fair_id, title, fair_time, location, content, total_booths, is_published FROM jobfair ORDER BY fair_time DESC")
     fairs = cur.fetchall()
     cur.close()
     return jsonify({'code': 200, 'data': fairs})
@@ -555,7 +555,7 @@ def admin_create_jobfair():
     cur = mysql.connection.cursor()
 
     cur.execute("""
-        INSERT INTO JobFair (title, fair_time, location, content, total_booths, is_published)
+        INSERT INTO jobfair (title, fair_time, location, content, total_booths, is_published)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (data.get('title'), data.get('fair_time'), data.get('location'),
           data.get('content'), data.get('total_booths'), data.get('is_published', '否')))
@@ -568,7 +568,7 @@ def admin_create_jobfair():
         row_char = chr(64 + ((i - 1) // 10))
         col_num = ((i - 1) % 10) + 1
         booth_no = f"{row_char}{col_num:02d}"
-        cur.execute("INSERT INTO Booth (fair_id, booth_no, is_occupied) VALUES (%s, %s, FALSE)", (fair_id, booth_no))
+        cur.execute("INSERT INTO booth (fair_id, booth_no, is_occupied) VALUES (%s, %s, FALSE)", (fair_id, booth_no))
     mysql.connection.commit()
     cur.close()
     return jsonify({'code': 200, 'message': '招聘会创建成功'})
@@ -580,7 +580,7 @@ def admin_update_jobfair(fair_id):
     data = request.json
     cur = mysql.connection.cursor()
     cur.execute("""
-        UPDATE JobFair
+        UPDATE jobfair
         SET title=%s, fair_time=%s, location=%s, content=%s, total_booths=%s, is_published=%s
         WHERE fair_id=%s
     """, (data.get('title'), data.get('fair_time'), data.get('location'),
@@ -594,7 +594,7 @@ def admin_update_jobfair(fair_id):
 @safe_execute
 def admin_delete_jobfair(fair_id):
     cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM JobFair WHERE fair_id=%s", (fair_id,))
+    cur.execute("DELETE FROM jobfair WHERE fair_id=%s", (fair_id,))
     mysql.connection.commit()
     cur.close()
     return jsonify({'code': 200, 'message': '删除成功'})
@@ -607,8 +607,8 @@ def admin_get_fair_booths(fair_id):
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT b.booth_id, b.booth_no, b.is_occupied, b.employer_id, e.name as employer_name
-        FROM Booth b
-        LEFT JOIN Employer e ON b.employer_id = e.employer_id
+        FROM booth b
+        LEFT JOIN employer e ON b.employer_id = e.employer_id
         WHERE b.fair_id = %s
         ORDER BY b.booth_no
     """, (fair_id,))
@@ -625,9 +625,9 @@ def admin_assign_booth(booth_id):
     cur = mysql.connection.cursor()
 
     if employer_id:
-        cur.execute("UPDATE Booth SET employer_id=%s, is_occupied=TRUE WHERE booth_id=%s", (employer_id, booth_id))
+        cur.execute("UPDATE booth SET employer_id=%s, is_occupied=TRUE WHERE booth_id=%s", (employer_id, booth_id))
     else:
-        cur.execute("UPDATE Booth SET employer_id=NULL, is_occupied=FALSE WHERE booth_id=%s", (booth_id,))
+        cur.execute("UPDATE booth SET employer_id=NULL, is_occupied=FALSE WHERE booth_id=%s", (booth_id,))
     mysql.connection.commit()
     cur.close()
     return jsonify({'code': 200, 'message': '摊位分配成功'})
@@ -637,7 +637,7 @@ def admin_assign_booth(booth_id):
 @safe_execute
 def admin_get_all_employers():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT employer_id, name FROM Employer WHERE audit_status='通过' ORDER BY name")
+    cur.execute("SELECT employer_id, name FROM employer WHERE audit_status='通过' ORDER BY name")
     employers = cur.fetchall()
     cur.close()
     return jsonify({'code': 200, 'data': employers})
@@ -648,7 +648,7 @@ def admin_get_all_employers():
 @safe_execute
 def stats_graduate_by_major():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT major, COUNT(*) as count FROM Graduate GROUP BY major")
+    cur.execute("SELECT major, COUNT(*) as count FROM graduate GROUP BY major")
     result = cur.fetchall()
     cur.close()
     return jsonify({'code': 200, 'data': result})
@@ -658,9 +658,9 @@ def stats_graduate_by_major():
 @safe_execute
 def stats_employment_rate():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) as total FROM Graduate")
+    cur.execute("SELECT COUNT(*) as total FROM graduate")
     total = cur.fetchone()['total']
-    cur.execute("SELECT COUNT(DISTINCT a.stu_id) as employed FROM Application a WHERE a.status = '录用'")
+    cur.execute("SELECT COUNT(DISTINCT a.stu_id) as employed FROM application a WHERE a.status = '录用'")
     employed = cur.fetchone()['employed'] or 0
     cur.close()
     return jsonify({'code': 200, 'data': {
@@ -674,7 +674,7 @@ def stats_employment_rate():
 @safe_execute
 def stats_employer_by_type():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT nature, COUNT(*) as count FROM Employer WHERE audit_status='通过' GROUP BY nature")
+    cur.execute("SELECT nature, COUNT(*) as count FROM employer WHERE audit_status='通过' GROUP BY nature")
     result = cur.fetchall()
     cur.close()
     return jsonify({'code': 200, 'data': result})
@@ -686,8 +686,8 @@ def stats_job_by_major():
     cur = mysql.connection.cursor()
     cur.execute("""
         SELECT major_needed, SUM(demand_num) as total_demand
-        FROM Recruitment r
-        JOIN Employer e ON r.employer_id = e.employer_id
+        FROM recruitment r
+        JOIN employer e ON r.employer_id = e.employer_id
         WHERE e.audit_status='通过'
         GROUP BY major_needed
         ORDER BY total_demand DESC
@@ -705,7 +705,7 @@ def publish_news():
     data = request.json
     cur = mysql.connection.cursor()
     cur.execute("""
-        INSERT INTO News (title, category, content, publisher)
+        INSERT INTO news (title, category, content, publisher)
         VALUES (%s, %s, %s, %s)
     """, (data.get('title'), data.get('category'), data.get('content'), session['user_name']))
     mysql.connection.commit()
