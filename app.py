@@ -3,23 +3,28 @@ from flask_cors import CORS
 from flask_mysqldb import MySQL
 from functools import wraps
 import hashlib
+import os
 import re
 from datetime import datetime
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-# ==================== 安全配置 ====================
-app.config['SECRET_KEY'] = 'your-secret-key-change-in-production-2026'
+# ==================== 安全配置（生产环境请通过环境变量覆盖） ====================
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production-2026')
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SECURE'] = False  # 开发环境用False，生产环境改为True
+# HTTPS 部署时设置环境变量 SESSION_COOKIE_SECURE=true
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
 
-# ==================== MySQL配置 ====================
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''  # ⚠️ 改成你的MySQL密码
-app.config['MYSQL_DB'] = 'employment_system'
+# ==================== MySQL配置（通过环境变量注入） ====================
+app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST', 'localhost')
+app.config['MYSQL_PORT'] = int(os.environ.get('MYSQL_PORT', '3306'))
+app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER', 'root')
+app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD', '')
+app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB', 'employment_system')
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
@@ -714,18 +719,17 @@ def publish_news():
 def serve_static(filename):
     # 只允许特定的文件扩展名
     allowed_extensions = {'.html', '.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg'}
-    import os
     ext = os.path.splitext(filename)[1].lower()
     if ext not in allowed_extensions:
         return jsonify({'code': 404, 'message': '文件类型不允许'}), 404
-    return send_from_directory('.', filename)
+    return send_from_directory(BASE_DIR, filename)
 
 @app.route('/')
 def index():
-    return send_from_directory('.', 'login.html')
+    return send_from_directory(BASE_DIR, 'login.html')
 
 # ============================================================
 # 启动
 # ============================================================
 if __name__ == '__main__':
-    app.run(debug=False, host='127.0.0.1', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', '5000')))
